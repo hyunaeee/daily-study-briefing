@@ -14,8 +14,8 @@
   function loadProgress() {
     try {
       const p = JSON.parse(localStorage.getItem(PKEY)) || {};
-      return { visits: p.visits || {}, quiz: p.quiz || {}, practice: p.practice || {}, wrong: p.wrong || {} };
-    } catch { return { visits: {}, quiz: {}, practice: {}, wrong: {} }; }
+      return { visits: p.visits || {}, quiz: p.quiz || {}, practice: p.practice || {}, wrong: p.wrong || {}, activity: p.activity || {} };
+    } catch { return { visits: {}, quiz: {}, practice: {}, wrong: {}, activity: {} }; }
   }
   const progress = loadProgress();
   const saveProgress = () => localStorage.setItem(PKEY, JSON.stringify(progress));
@@ -41,6 +41,33 @@
   }
 
   const posOfDay = (day) => indexData.days.findIndex(d => d.day === day);
+
+  /* ---------- 학습 잔디 (활동량) ---------- */
+  function bump(n = 1) {
+    const k = todayKey();
+    progress.activity[k] = (progress.activity[k] || 0) + n;
+    saveProgress();
+    renderGrass();
+  }
+
+  function renderGrass() {
+    const WEEKS = 20;
+    const today = new Date(); today.setHours(23, 59, 59, 0);
+    const start = new Date(); start.setHours(0, 0, 0, 0);
+    start.setDate(start.getDate() - (WEEKS - 1) * 7 - start.getDay());
+    let html = "";
+    for (let w = 0; w < WEEKS; w++) {
+      for (let d = 0; d < 7; d++) {
+        const cur = new Date(start); cur.setDate(start.getDate() + w * 7 + d);
+        const key = `${cur.getFullYear()}-${pad2(cur.getMonth() + 1)}-${pad2(cur.getDate())}`;
+        const n = progress.activity[key] || 0;
+        const lvl = n === 0 ? 0 : n <= 2 ? 1 : n <= 5 ? 2 : n <= 9 ? 3 : 4;
+        const future = cur > today;
+        html += `<span class="grass-cell${future ? " future" : ""}${lvl ? " l" + lvl : ""}" title="${key} · 활동 ${n}회"></span>`;
+      }
+    }
+    $("#grassGrid").innerHTML = html;
+  }
 
   function todayKey(offset = 0) {
     const d = new Date();
@@ -96,17 +123,26 @@
 
   async function init() {
     initTheme();
+    const firstVisitToday = !progress.visits[todayKey()];
     progress.visits[todayKey()] = 1;
+    // 과거 방문일도 잔디에 반영 (최소 1회)
+    Object.keys(progress.visits).forEach(k => {
+      if (!progress.activity[k]) progress.activity[k] = 1;
+    });
+    if (firstVisitToday) progress.activity[todayKey()] = (progress.activity[todayKey()] || 0) + 0;
     saveProgress();
     try {
       indexData = await loadJSON("data/index.json");
       dayPos = indexData.days.length - 1;
       await showDay(dayPos);
+      window.addEventListener("hashchange", route);
+      if (location.hash) route(); // 새로고침/딥링크로 상세 화면 진입 지원
     } catch (e) {
       $("#dateLabel").textContent = "데이터를 불러오지 못했습니다";
       console.error(e);
     }
     renderStats();
+    renderGrass();
     renderSaved();
     $("#reviewBtn").addEventListener("click", openReview);
     $("#calPrev").addEventListener("click", () => moveMonth(-1));
@@ -181,6 +217,10 @@
 
   /* ---------- 보관함 ---------- */
   async function jumpToSaved(s) {
+    if ((s.kind === "news" || s.kind === "paper") && s.url) {
+      window.open(s.url, "_blank", "noopener"); // 기사·논문은 바로 원문 열기
+      return;
+    }
     const pos = posOfDay(s.day);
     if (pos < 0) return;
     await showDay(pos);
@@ -230,6 +270,7 @@
 
   async function runSearch(query) {
     if (!query) { closeSearch(); return; }
+    if (document.body.classList.contains("detail-mode")) { showHomeView(); history.replaceState(null, "", location.pathname); }
     const q = query.toLowerCase();
     const days = await loadAllDays();
     const results = [];
@@ -332,7 +373,7 @@
       }, sbtn));
       const check = card.querySelector(".practice-check input");
       check.addEventListener("change", () => {
-        if (check.checked) progress.practice[key] = 1;
+        if (check.checked) { progress.practice[key] = 1; bump(1); }
         else delete progress.practice[key];
         saveProgress();
         check.closest(".practice-check").classList.toggle("done", check.checked);
@@ -342,41 +383,71 @@
     });
   }
 
-  /* ---------- 심화 패널 ---------- */
+  /* ---------- 상세 화면 (해시 라우팅) ---------- */
   function openDetail(i) {
-    const c = dayData.concepts[i];
-    const key = conceptKey(i);
-    const panel = $("#detail");
-    panel.innerHTML = `
-      <div class="detail-head">
-        <span class="tag ${c.field}">${esc(c.fieldLabel)}</span>
-        <h3>${esc(c.title)} — 깊이 공부하기</h3>
-        <button class="close" type="button">닫기 ✕</button>
-      </div>
-      <div class="detail-body">
-        <div class="subhead">Deep Dive · 자세한 설명</div>
-        ${c.deepDive.map(sec => `
-          <h4 class="accent-${c.field}">${esc(sec.h)}</h4>
-          ${sec.p.map(p => `<p>${esc(p)}</p>`).join("")}`).join("")}
-        <div class="subhead">Mind Map · 한눈에 정리</div>
-        <div class="mindmap-box" id="mindmapBox"></div>
-        <div class="subhead">Quiz · 이해했는지 확인 (${c.quiz.length}문제)</div>
-        <div id="quizBox"></div>
-        <div class="quiz-score" id="quizScore"></div>
+    const target = `#d${dayData.day}-c${i}`;
+    if (location.hash === target) route(); // 같은 해시 재클릭도 동작
+    else location.hash = target;           // 히스토리에 쌓여 뒤로가기 지원
+  }
+
+  function route() {
+    const m = location.hash.match(/^#d(\d+)-c(\d+)$/);
+    if (m) { openDetailView(Number(m[1]), Number(m[2])); return; }
+    showHomeView();
+    const id = location.hash.slice(1);
+    if (id) document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+  }
+
+  function showHomeView() {
+    document.body.classList.remove("detail-mode");
+    const dv = $("#detailView");
+    dv.classList.remove("open");
+    dv.innerHTML = "";
+  }
+
+  async function openDetailView(day, ci) {
+    const pos = posOfDay(day);
+    if (pos < 0) { location.hash = ""; return; }
+    if (!dayData || dayData.day !== day) await showDay(pos);
+    const c = dayData.concepts[ci];
+    if (!c) { location.hash = ""; return; }
+    const key = `${day}:${ci}`;
+    bump(1); // 상세 학습도 잔디에 반영
+
+    document.body.classList.add("detail-mode");
+    const dv = $("#detailView");
+    dv.classList.add("open");
+    dv.innerHTML = `
+      <div class="dv-box">
+        <div class="dv-head">
+          <button class="back-btn" id="dvBack" type="button">← 뒤로</button>
+          <span class="tag ${c.field}">${esc(c.fieldLabel)}</span>
+          <h2>${esc(c.title)}</h2>
+          <span class="dv-crumb">DAY ${day} · ${esc(dayData.dateLabel)} — 상단 '홈' 탭이나 뒤로가기로 돌아갈 수 있어요</span>
+        </div>
+        <div class="detail-body">
+          <div class="subhead">Deep Dive · 자세한 설명</div>
+          ${c.deepDive.map(sec => `
+            <h4 class="accent-${c.field}">${esc(sec.h)}</h4>
+            ${sec.p.map(p => `<p>${esc(p)}</p>`).join("")}`).join("")}
+          <div class="subhead">Mind Map · 한눈에 정리</div>
+          <div class="mindmap-box" id="mindmapBox"></div>
+          <div class="subhead">Quiz · 이해했는지 확인 (${c.quiz.length}문제)</div>
+          <div id="quizBox"></div>
+          <div class="quiz-score" id="quizScore"></div>
+        </div>
       </div>`;
-    panel.classList.add("open");
-    panel.querySelector(".close").addEventListener("click", closeDetail);
-    document.querySelectorAll("#cards .card").forEach((el, j) => {
-      el.classList.toggle("active", j === i);
-      el.style.color = j === i ? `var(--${c.field})` : "";
+    $("#dvBack").addEventListener("click", () => {
+      if (history.length > 1) history.back();
+      else location.hash = "";
     });
-    renderMindmap(panel.querySelector("#mindmapBox"), c.mindmap);
-    renderQuiz(panel.querySelector("#quizBox"), panel.querySelector("#quizScore"), c.quiz, {
+    renderMindmap(dv.querySelector("#mindmapBox"), c.mindmap);
+    renderQuiz(dv.querySelector("#quizBox"), dv.querySelector("#quizScore"), c.quiz, {
       onAnswer(item, qi, ok) {
         const wkey = `${key}:${qi}`;
         if (ok) delete progress.wrong[wkey];
         else progress.wrong[wkey] = {
-          day: dayData.day, field: c.field, fieldLabel: c.fieldLabel, title: c.title, item
+          day, field: c.field, fieldLabel: c.fieldLabel, title: c.title, item
         };
         saveProgress();
       },
@@ -384,25 +455,13 @@
         progress.quiz[key] = { c: correct, t: total };
         saveProgress();
         renderStats();
-        renderCards();
-        document.querySelectorAll("#cards .card").forEach((el, j) => {
-          el.classList.toggle("active", j === i);
-          el.style.color = j === i ? `var(--${c.field})` : "";
-        });
+        renderCards(); // 홈 카드 배지 갱신
       }
     });
-    panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    window.scrollTo({ top: 0 });
   }
 
-  function closeDetail() {
-    const panel = $("#detail");
-    panel.classList.remove("open");
-    panel.innerHTML = "";
-    document.querySelectorAll("#cards .card").forEach(el => {
-      el.classList.remove("active");
-      el.style.color = "";
-    });
-  }
+  function closeDetail() { /* 라우팅 방식에서는 홈 복귀가 route()로 처리됨 */ }
 
   /* ---------- 퀴즈 (공용) ---------- */
   function renderQuiz(box, scoreEl, quiz, hooks = {}) {
@@ -421,6 +480,7 @@
       buttons.forEach(btn => btn.addEventListener("click", () => {
         const pick = Number(btn.dataset.ci);
         const ok = pick === item.answer;
+        bump(1); // 퀴즈 풀이도 잔디에 반영
         buttons.forEach(b => (b.disabled = true));
         buttons[item.answer].classList.add("correct");
         if (ok) correct++;
@@ -474,12 +534,32 @@
     try { return new URL(url).hostname.replace(/^www\./, ""); } catch { return ""; }
   }
 
+  function favicon(url) {
+    return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(press(url))}&sz=64`;
+  }
+
+  // 이미지 로드 실패 시 파비콘으로 대체
+  function bindThumbFallback(scope) {
+    scope.querySelectorAll("img.thumb").forEach(img => {
+      img.addEventListener("error", () => {
+        if (img.dataset.fb && img.src !== img.dataset.fb) {
+          img.classList.add("fav");
+          img.src = img.dataset.fb;
+        } else img.style.visibility = "hidden";
+      }, { once: false });
+    });
+  }
+
   function renderNews() {
     $("#newsList").innerHTML = dayData.news.map((n, i) => `
       <li><span class="rank">${i + 1}</span>
-      <div><span class="headline">${esc(n.headline)}</span><span class="press">${esc(press(n.url))}</span>
+      <a href="${esc(n.url)}" target="_blank" rel="noopener" tabindex="-1">
+        <img class="thumb ${n.image ? "" : "fav"}" src="${esc(n.image || favicon(n.url))}" data-fb="${esc(favicon(n.url))}" alt="" loading="lazy">
+      </a>
+      <div class="nbody"><a class="headline" href="${esc(n.url)}" target="_blank" rel="noopener">${esc(n.headline)}</a><span class="press">${esc(press(n.url))}</span>
       ${saveBtnHTML(`n:${dayData.day}:${i}`)}
       <p>${esc(n.body)} <a class="src" href="${esc(n.url)}" target="_blank" rel="noopener">원문 보기</a></p></div></li>`).join("");
+    bindThumbFallback($("#newsList"));
     $("#newsList").querySelectorAll(".save-btn").forEach(btn => {
       const i = Number(btn.dataset.sid.split(":")[2]);
       const n = dayData.news[i];
@@ -496,14 +576,28 @@
   }
 
   function renderPapers() {
-    $("#paperList").innerHTML = dayData.papers.map((p, i) => `
-      <article class="paper"><h3 style="display:flex; align-items:baseline; gap:4px"><span style="flex:1">${esc(p.title)}</span>${saveBtnHTML(`p:${dayData.day}:${i}`)}</h3>
-      <p>${esc(p.desc)}</p></article>`).join("");
+    $("#paperList").innerHTML = dayData.papers.map((p, i) => {
+      const url = p.url || "https://huggingface.co/papers";
+      return `
+      <article class="paper"><div class="p-row">
+        <a href="${esc(url)}" target="_blank" rel="noopener" tabindex="-1">
+          <img class="thumb ${p.image ? "" : "fav"}" src="${esc(p.image || favicon(url))}" data-fb="${esc(favicon(url))}" alt="" loading="lazy">
+        </a>
+        <div style="flex:1; min-width:0">
+          <h3 style="display:flex; align-items:baseline; gap:4px">
+            <a href="${esc(url)}" target="_blank" rel="noopener" style="flex:1">${esc(p.title)}</a>
+            ${saveBtnHTML(`p:${dayData.day}:${i}`)}
+          </h3>
+          <p>${esc(p.desc)}</p>
+        </div>
+      </div></article>`;
+    }).join("");
+    bindThumbFallback($("#paperList"));
     $("#paperList").querySelectorAll(".save-btn").forEach(btn => {
       const i = Number(btn.dataset.sid.split(":")[2]);
       const p = dayData.papers[i];
       btn.addEventListener("click", () => toggleSave(btn.dataset.sid, {
-        kind: "paper", day: dayData.day, title: p.title
+        kind: "paper", day: dayData.day, title: p.title, url: p.url
       }, btn));
     });
   }

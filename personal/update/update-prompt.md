@@ -23,6 +23,8 @@
    - `mindmap`: root + 가지 4~5개, 가지당 잎 2~4개
    - `quiz`: 4문제, 각각 choices 4개 + answer(0-기준 인덱스) + explain
    - `news`/`trends`는 실제 검색에서 얻은 출처 URL 포함. 확인 안 된 내용은 싣지 말 것
+   - `news` 각 항목에 `image` 필드: 기사 페이지를 가져와(og:image 메타 태그) 대표 이미지 URL을 넣을 것. Node fetch 스크립트로 `<meta property="og:image" content="...">`를 추출하면 됨. 실패하면 빈 문자열 ""
+   - `papers` 각 항목에 `url` 필드 필수: 논문 페이지 링크(Hugging Face papers 상세나 arXiv abs 페이지). 가능하면 `image`(og:image)도 추출해 포함
 
 5. **인덱스 갱신**: `docs/data/index.json`의 days 배열 끝에 새 날짜 항목을 추가하세요 (day, date "YYYY.MM.DD", file, topics).
 

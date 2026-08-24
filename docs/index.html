@@ -253,6 +253,50 @@
   .trend b { color: var(--ink); display: block; margin-bottom: 2px; font-size: 0.9rem; }
   .stat { font-family: ui-monospace, Consolas, monospace; font-variant-numeric: tabular-nums; color: var(--ink); }
 
+  /* ---------- 학습 잔디 ---------- */
+  :root { --g0: #EBEDF0; --g1: #9BE9A8; --g2: #40C463; --g3: #30A14E; --g4: #216E39; }
+  @media (prefers-color-scheme: dark) { :root { --g0: #21262D; --g1: #0E4429; --g2: #006D32; --g3: #26A641; --g4: #39D353; } }
+  :root[data-theme="light"] { --g0: #EBEDF0; --g1: #9BE9A8; --g2: #40C463; --g3: #30A14E; --g4: #216E39; }
+  :root[data-theme="dark"]  { --g0: #21262D; --g1: #0E4429; --g2: #006D32; --g3: #26A641; --g4: #39D353; }
+  .grass-wrap { margin-top: 14px; }
+  .grass-title { font-size: 0.78rem; font-weight: 700; color: var(--ink-soft); margin-bottom: 7px; display: flex; align-items: center; }
+  .grass-scroll { overflow-x: auto; padding-bottom: 2px; }
+  .grass-grid { display: grid; grid-auto-flow: column; grid-template-rows: repeat(7, 11px); gap: 3px; width: max-content; }
+  .grass-cell { width: 11px; height: 11px; border-radius: 2.5px; background: var(--g0); }
+  .grass-cell.l1 { background: var(--g1); } .grass-cell.l2 { background: var(--g2); }
+  .grass-cell.l3 { background: var(--g3); } .grass-cell.l4 { background: var(--g4); }
+  .grass-cell.future { visibility: hidden; }
+  .grass-legend { display: flex; align-items: center; gap: 3px; margin-left: auto; font-size: 0.66rem; color: var(--ink-faint); font-weight: 400; }
+  .grass-legend .grass-cell { display: inline-block; }
+
+  /* ---------- 뉴스/논문 썸네일 ---------- */
+  .thumb {
+    flex: none; width: 72px; height: 54px; border-radius: 6px; object-fit: cover;
+    border: 1px solid var(--line); background: var(--bg); align-self: center;
+  }
+  .thumb.fav { object-fit: contain; padding: 14px; width: 72px; height: 54px; }
+  .news li { align-items: center; }
+  .news .nbody { flex: 1; min-width: 0; }
+  .news a.headline { color: var(--ink); }
+  .news a.headline:hover { color: var(--link); }
+  .paper .p-row { display: flex; gap: 12px; align-items: center; }
+  .paper a h3, .paper a { color: var(--ink); }
+  .paper a:hover h3 { color: var(--link); text-decoration: underline; }
+
+  /* ---------- 상세 화면 (풀 페이지) ---------- */
+  #detailView { display: none; max-width: 880px; margin: 0 auto; padding: 14px 20px 70px; }
+  #detailView.open { display: block; }
+  body.detail-mode #homeView, body.detail-mode .datestrip { display: none; }
+  .dv-box { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .dv-head { padding: 16px 22px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .back-btn {
+    background: var(--bg); border: 1px solid var(--line-strong); color: var(--ink);
+    border-radius: 6px; padding: 6px 14px; cursor: pointer; font-size: 0.86rem; font-weight: 700; font-family: inherit;
+  }
+  .back-btn:hover { border-color: var(--ink-faint); }
+  .dv-crumb { font-family: ui-monospace, Consolas, monospace; font-size: 0.74rem; color: var(--ink-faint); width: 100%; }
+  .dv-head h2 { margin: 0; font-size: 1.3rem; flex: 1; letter-spacing: -0.01em; }
+
   /* ---------- 달력 ---------- */
   .cal-nav { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
   .cal-nav b { flex: 1; text-align: center; font-size: 0.92rem; font-family: ui-monospace, Consolas, monospace; }
@@ -348,7 +392,9 @@
   </nav>
 </div>
 
-<div class="layout">
+<div id="detailView" aria-live="polite"></div>
+
+<div class="layout" id="homeView">
   <!-- ============ 메인 컬럼 ============ -->
   <div class="col">
     <div class="box" id="searchBox">
@@ -362,7 +408,6 @@
       <div class="box-head"><span class="accent-dot"></span><h2>오늘의 학습</h2><span class="more">개념 셋 · 퀴즈 · 마인드맵</span></div>
       <div class="box-body">
         <div class="cards" id="cards"></div>
-        <div id="detail" aria-live="polite"></div>
       </div>
     </div>
 
@@ -385,6 +430,14 @@
       <div class="box-head"><span class="accent-dot"></span><h2>내 학습 현황</h2></div>
       <div class="box-body">
         <div class="stats" id="stats"></div>
+        <div class="grass-wrap">
+          <div class="grass-title">🌱 학습 잔디
+            <span class="grass-legend">적음
+              <span class="grass-cell"></span><span class="grass-cell l1"></span><span class="grass-cell l2"></span><span class="grass-cell l3"></span><span class="grass-cell l4"></span>
+            많음</span>
+          </div>
+          <div class="grass-scroll"><div class="grass-grid" id="grassGrid"></div></div>
+        </div>
         <button class="review-btn" id="reviewBtn" type="button" disabled>복습할 문제가 없습니다</button>
         <div id="reviewPanel" aria-live="polite"></div>
       </div>
