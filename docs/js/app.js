@@ -20,6 +20,28 @@
   const progress = loadProgress();
   const saveProgress = () => localStorage.setItem(PKEY, JSON.stringify(progress));
 
+  /* ---------- 보관함 저장소 ---------- */
+  const SKEY = "dsb.saved";
+  function loadSaved() {
+    try { return JSON.parse(localStorage.getItem(SKEY)) || {}; } catch { return {}; }
+  }
+  const saved = loadSaved();
+  const persistSaved = () => localStorage.setItem(SKEY, JSON.stringify(saved));
+
+  function toggleSave(id, payload, btn) {
+    if (saved[id]) delete saved[id];
+    else saved[id] = payload;
+    persistSaved();
+    if (btn) { btn.classList.toggle("on", !!saved[id]); btn.textContent = saved[id] ? "★" : "☆"; }
+    renderSaved();
+  }
+
+  function saveBtnHTML(id, extra) {
+    return `<button class="save-btn ${saved[id] ? "on" : ""}" data-sid="${id}" title="보관함에 저장" aria-label="보관함에 저장" ${extra || ""}>${saved[id] ? "★" : "☆"}</button>`;
+  }
+
+  const posOfDay = (day) => indexData.days.findIndex(d => d.day === day);
+
   function todayKey(offset = 0) {
     const d = new Date();
     d.setDate(d.getDate() + offset);
@@ -85,7 +107,10 @@
       console.error(e);
     }
     renderStats();
+    renderSaved();
     $("#reviewBtn").addEventListener("click", openReview);
+    $("#calPrev").addEventListener("click", () => moveMonth(-1));
+    $("#calNext").addEventListener("click", () => moveMonth(1));
     $("#searchForm").addEventListener("submit", (e) => {
       e.preventDefault();
       runSearch($("#searchInput").value.trim());
@@ -107,6 +132,91 @@
     renderPapers();
     renderKeywords();
     renderArchive();
+    calCur = null; // 달력을 표시 중인 날짜의 달로 동기화
+    renderCalendar();
+  }
+
+  /* ---------- 학습 달력 ---------- */
+  let calCur = null; // {y, m} — 표시 중인 달
+  const pad2 = (n) => String(n).padStart(2, "0");
+
+  function renderCalendar() {
+    const dateMap = {}; // "YYYY.MM.DD" → pos
+    indexData.days.forEach((d, pos) => { dateMap[d.date] = pos; });
+    if (!calCur) {
+      const [y, m] = indexData.days[dayPos].date.split(".").map(Number);
+      calCur = { y, m };
+    }
+    $("#calTitle").textContent = `${calCur.y}.${pad2(calCur.m)}`;
+    const first = new Date(calCur.y, calCur.m - 1, 1);
+    const daysInMonth = new Date(calCur.y, calCur.m, 0).getDate();
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}.${pad2(now.getMonth() + 1)}.${pad2(now.getDate())}`;
+
+    let html = ["일", "월", "화", "수", "목", "금", "토"]
+      .map((d, i) => `<span class="cal-dow ${i === 0 ? "sun" : ""}">${d}</span>`).join("");
+    for (let i = 0; i < first.getDay(); i++) html += `<span class="cal-cell"></span>`;
+    for (let d = 1; d <= daysInMonth; d++) {
+      const str = `${calCur.y}.${pad2(calCur.m)}.${pad2(d)}`;
+      const pos = dateMap[str];
+      const cls = ["cal-cell"];
+      if (pos !== undefined) cls.push("has");
+      if (pos === dayPos) cls.push("sel");
+      if (str === todayStr) cls.push("today");
+      html += `<span class="${cls.join(" ")}" ${pos !== undefined ? `data-pos="${pos}"` : ""}>${d}</span>`;
+    }
+    $("#calGrid").innerHTML = html;
+    $("#calGrid").querySelectorAll(".cal-cell.has").forEach(cell =>
+      cell.addEventListener("click", () => showDay(Number(cell.dataset.pos))));
+  }
+
+  function moveMonth(delta) {
+    let { y, m } = calCur;
+    m += delta;
+    if (m < 1) { m = 12; y--; }
+    if (m > 12) { m = 1; y++; }
+    calCur = { y, m };
+    renderCalendar();
+  }
+
+  /* ---------- 보관함 ---------- */
+  async function jumpToSaved(s) {
+    const pos = posOfDay(s.day);
+    if (pos < 0) return;
+    await showDay(pos);
+    if (s.kind === "concept") openDetail(s.ci);
+    else if (s.kind === "news") $("#newsSec").scrollIntoView({ behavior: "smooth" });
+    else $("#paperSec").scrollIntoView({ behavior: "smooth" });
+  }
+
+  function renderSaved() {
+    const entries = Object.entries(saved);
+    $("#savedCount").textContent = entries.length ? `${entries.length}개` : "";
+    const list = $("#savedList");
+    if (entries.length === 0) {
+      list.innerHTML = `<li class="sv-empty" style="border:none">카드·뉴스·논문의 ☆ 별을 누르면 여기에 모입니다.</li>`;
+      return;
+    }
+    list.innerHTML = entries.map(([id, s]) => {
+      const kindCls = s.kind === "concept" ? s.field : s.kind;
+      const kindLabel = s.kind === "concept" ? s.fieldLabel : (s.kind === "news" ? "뉴스" : "논문");
+      return `<li data-id="${esc(id)}">
+        <span class="sv-kind ${kindCls}">${esc(kindLabel)}</span>
+        <span class="sv-title">${esc(s.title)}</span>
+        <span class="sv-day">DAY ${s.day}</span>
+        <button class="sv-del" title="보관함에서 삭제" aria-label="삭제">✕</button>
+      </li>`;
+    }).join("");
+    list.querySelectorAll("li[data-id]").forEach(li => {
+      const id = li.dataset.id;
+      li.querySelector(".sv-title").addEventListener("click", () => jumpToSaved(saved[id]));
+      li.querySelector(".sv-del").addEventListener("click", () => {
+        delete saved[id];
+        persistSaved();
+        renderSaved();
+        renderCards(); renderNews(); renderPapers(); // 별 상태 동기화
+      });
+    });
   }
 
   /* ---------- 검색 ---------- */
@@ -200,8 +310,10 @@
       const done = !!progress.practice[key];
       const card = document.createElement("article");
       card.className = "card";
+      const sid = `c:${dayData.day}:${i}`;
       card.innerHTML = `
-        <div style="display:flex; align-items:center;"><span class="tag ${c.field}">${esc(c.fieldLabel)}</span>${badge}</div>
+        <div style="display:flex; align-items:center;"><span class="tag ${c.field}">${esc(c.fieldLabel)}</span>${badge}
+          <span style="margin-left:${badge ? "6px" : "auto"}">${saveBtnHTML(sid)}</span></div>
         <h3>${esc(c.title)}</h3>
         <p>${esc(c.summary)}</p>
         <p class="why"><b>왜 중요한가:</b> ${esc(c.why)}</p>
@@ -213,6 +325,11 @@
         <div class="kw">${c.keywords.map(k => `<span>${esc(k)}</span>`).join("")}</div>
         <button class="study-btn ${c.field}" data-idx="${i}">자세히 공부하기 → 퀴즈 · 마인드맵</button>`;
       card.querySelector(".study-btn").addEventListener("click", () => openDetail(i));
+      const sbtn = card.querySelector(".save-btn");
+      sbtn.addEventListener("click", () => toggleSave(sid, {
+        kind: "concept", day: dayData.day, ci: i,
+        field: c.field, fieldLabel: c.fieldLabel, title: c.title
+      }, sbtn));
       const check = card.querySelector(".practice-check input");
       check.addEventListener("change", () => {
         if (check.checked) progress.practice[key] = 1;
@@ -361,7 +478,15 @@
     $("#newsList").innerHTML = dayData.news.map((n, i) => `
       <li><span class="rank">${i + 1}</span>
       <div><span class="headline">${esc(n.headline)}</span><span class="press">${esc(press(n.url))}</span>
+      ${saveBtnHTML(`n:${dayData.day}:${i}`)}
       <p>${esc(n.body)} <a class="src" href="${esc(n.url)}" target="_blank" rel="noopener">원문 보기</a></p></div></li>`).join("");
+    $("#newsList").querySelectorAll(".save-btn").forEach(btn => {
+      const i = Number(btn.dataset.sid.split(":")[2]);
+      const n = dayData.news[i];
+      btn.addEventListener("click", () => toggleSave(btn.dataset.sid, {
+        kind: "news", day: dayData.day, title: n.headline, url: n.url
+      }, btn));
+    });
   }
 
   function renderTrends() {
@@ -371,8 +496,16 @@
   }
 
   function renderPapers() {
-    $("#paperList").innerHTML = dayData.papers.map(p => `
-      <article class="paper"><h3>${esc(p.title)}</h3><p>${esc(p.desc)}</p></article>`).join("");
+    $("#paperList").innerHTML = dayData.papers.map((p, i) => `
+      <article class="paper"><h3 style="display:flex; align-items:baseline; gap:4px"><span style="flex:1">${esc(p.title)}</span>${saveBtnHTML(`p:${dayData.day}:${i}`)}</h3>
+      <p>${esc(p.desc)}</p></article>`).join("");
+    $("#paperList").querySelectorAll(".save-btn").forEach(btn => {
+      const i = Number(btn.dataset.sid.split(":")[2]);
+      const p = dayData.papers[i];
+      btn.addEventListener("click", () => toggleSave(btn.dataset.sid, {
+        kind: "paper", day: dayData.day, title: p.title
+      }, btn));
+    });
   }
 
   function renderArchive() {
