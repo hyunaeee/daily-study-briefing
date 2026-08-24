@@ -6,267 +6,377 @@
 <title>매일 학습 브리핑</title>
 <style>
   :root {
-    --bg: #FAFAF6; --surface: #FFFFFF; --ink: #1C2733; --ink-soft: #4A5866;
-    --ink-faint: #8A97A5; --line: #E4E6DF; --hl: #FFE066;
+    --bg: #F5F6F8; --surface: #FFFFFF; --ink: #202124; --ink-soft: #51565D;
+    --ink-faint: #9096A0; --line: #E4E7EC; --line-strong: #D5D9E0; --hl: #FFE066;
+    --accent: #03C75A; --accent-deep: #02A94D; --accent-bg: #EAF9F0;
     --cs: #3E6FE0; --cs-bg: #EDF2FD; --mkt: #D95D39; --mkt-bg: #FCEFEA;
     --ai: #7B5CD6; --ai-bg: #F2EEFB; --link: #2B5FCC;
     --ok: #2E8B57; --ok-bg: #E8F5EE; --bad: #C0392B; --bad-bg: #FBECEA;
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --bg: #14181F; --surface: #1C222B; --ink: #E8ECF1; --ink-soft: #AEB9C6;
-      --ink-faint: #6B7684; --line: #2A323D; --hl: #8A6D00;
+      --bg: #101418; --surface: #1A2027; --ink: #E8ECF1; --ink-soft: #AEB9C6;
+      --ink-faint: #6B7684; --line: #2A323D; --line-strong: #38424E; --hl: #8A6D00;
+      --accent: #3DD576; --accent-deep: #2FBF64; --accent-bg: #16321F;
       --cs: #7DA0F0; --cs-bg: #1E2A44; --mkt: #F0906E; --mkt-bg: #3A241B;
       --ai: #A98FF0; --ai-bg: #2B2440; --link: #86A8F5;
       --ok: #5DC08A; --ok-bg: #1D3328; --bad: #E0796B; --bad-bg: #3A2320;
     }
   }
   :root[data-theme="light"] {
-    --bg: #FAFAF6; --surface: #FFFFFF; --ink: #1C2733; --ink-soft: #4A5866;
-    --ink-faint: #8A97A5; --line: #E4E6DF; --hl: #FFE066;
+    --bg: #F5F6F8; --surface: #FFFFFF; --ink: #202124; --ink-soft: #51565D;
+    --ink-faint: #9096A0; --line: #E4E7EC; --line-strong: #D5D9E0; --hl: #FFE066;
+    --accent: #03C75A; --accent-deep: #02A94D; --accent-bg: #EAF9F0;
     --cs: #3E6FE0; --cs-bg: #EDF2FD; --mkt: #D95D39; --mkt-bg: #FCEFEA;
     --ai: #7B5CD6; --ai-bg: #F2EEFB; --link: #2B5FCC;
     --ok: #2E8B57; --ok-bg: #E8F5EE; --bad: #C0392B; --bad-bg: #FBECEA;
     color-scheme: light;
   }
   :root[data-theme="dark"] {
-    --bg: #14181F; --surface: #1C222B; --ink: #E8ECF1; --ink-soft: #AEB9C6;
-    --ink-faint: #6B7684; --line: #2A323D; --hl: #8A6D00;
+    --bg: #101418; --surface: #1A2027; --ink: #E8ECF1; --ink-soft: #AEB9C6;
+    --ink-faint: #6B7684; --line: #2A323D; --line-strong: #38424E; --hl: #8A6D00;
+    --accent: #3DD576; --accent-deep: #2FBF64; --accent-bg: #16321F;
     --cs: #7DA0F0; --cs-bg: #1E2A44; --mkt: #F0906E; --mkt-bg: #3A241B;
     --ai: #A98FF0; --ai-bg: #2B2440; --link: #86A8F5;
     --ok: #5DC08A; --ok-bg: #1D3328; --bad: #E0796B; --bad-bg: #3A2320;
     color-scheme: dark;
   }
+
   * { box-sizing: border-box; }
   body {
     margin: 0; background: var(--bg); color: var(--ink);
     font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
       "Malgun Gothic", "Apple SD Gothic Neo", "Segoe UI", sans-serif;
-    line-height: 1.65; -webkit-font-smoothing: antialiased;
+    line-height: 1.6; -webkit-font-smoothing: antialiased; font-size: 14px;
   }
-  .wrap { max-width: 940px; margin: 0 auto; padding: 0 24px 80px; }
+  a { color: var(--link); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .mono { font-family: ui-monospace, Consolas, "Cascadia Mono", monospace; }
-
-  header { padding: 40px 0 26px; border-bottom: 2px solid var(--ink); }
-  .date-row {
-    display: flex; flex-wrap: wrap; align-items: center; gap: 12px;
-    font-family: ui-monospace, Consolas, monospace;
-    font-size: 0.82rem; letter-spacing: 0.06em; color: var(--ink-soft);
-  }
-  .day-badge { background: var(--ink); color: var(--bg); padding: 2px 10px; border-radius: 3px; font-weight: 700; }
-  .day-nav { margin-left: auto; display: flex; gap: 6px; }
-  .day-nav button {
-    background: var(--surface); border: 1px solid var(--line); color: var(--ink);
-    border-radius: 5px; padding: 3px 12px; cursor: pointer; font-size: 0.85rem;
-  }
-  .day-nav button:disabled { opacity: 0.35; cursor: default; }
-  .day-nav button:not(:disabled):hover { border-color: var(--ink-soft); }
-  h1 { font-size: clamp(1.7rem, 4.5vw, 2.3rem); line-height: 1.25; margin: 14px 0 6px; letter-spacing: -0.02em; text-wrap: balance; font-weight: 800; }
-  .tagline { color: var(--ink-soft); margin: 0; font-size: 0.95rem; }
   mark { background: linear-gradient(transparent 55%, var(--hl) 55%); color: inherit; padding: 0 2px; }
 
-  section { margin-top: 52px; }
-  .sec-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 18px; }
-  .sec-head h2 { font-size: 1.25rem; margin: 0; }
-  .sec-head .kicker { font-family: ui-monospace, Consolas, monospace; font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-faint); }
+  /* ================= 헤더 (포털 상단) ================= */
+  .topbar { background: var(--surface); border-bottom: 1px solid var(--line); }
+  .topbar-in {
+    max-width: 1080px; margin: 0 auto; padding: 14px 20px;
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  }
+  .logo { display: flex; align-items: center; gap: 8px; text-decoration: none; }
+  .logo-mark {
+    width: 34px; height: 34px; border-radius: 9px; background: var(--accent);
+    color: #fff; font-weight: 900; font-size: 1.05rem;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .logo-text { font-size: 1.25rem; font-weight: 900; letter-spacing: -0.03em; color: var(--ink); }
+  .logo-text b { color: var(--accent); }
+  .searchbox {
+    flex: 1; min-width: 220px; max-width: 480px; display: flex;
+    border: 2px solid var(--accent); border-radius: 8px; overflow: hidden; background: var(--surface);
+  }
+  .searchbox input {
+    flex: 1; border: none; padding: 9px 14px; font-size: 0.95rem; font-family: inherit;
+    background: transparent; color: var(--ink); min-width: 0;
+  }
+  .searchbox input:focus { outline: none; }
+  .searchbox button {
+    border: none; background: var(--accent); color: #fff; padding: 0 18px;
+    font-size: 1rem; cursor: pointer; font-weight: 700;
+  }
+  .searchbox button:hover { background: var(--accent-deep); }
+  .top-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+  .theme-btn, .day-nav button {
+    background: var(--surface); border: 1px solid var(--line-strong); color: var(--ink-soft);
+    border-radius: 6px; padding: 5px 11px; cursor: pointer; font-size: 0.8rem; font-family: inherit;
+  }
+  .theme-btn:hover, .day-nav button:not(:disabled):hover { border-color: var(--ink-faint); }
+  .day-nav button:disabled { opacity: 0.35; cursor: default; }
 
-  .cards { display: grid; grid-template-columns: 1fr; gap: 16px; }
-  @media (min-width: 720px) { .cards { grid-template-columns: repeat(3, 1fr); } }
+  /* 탭 내비 */
+  .tabs { background: var(--surface); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 30; }
+  .tabs-in { max-width: 1080px; margin: 0 auto; padding: 0 20px; display: flex; gap: 2px; overflow-x: auto; }
+  .tabs a {
+    padding: 11px 14px; font-size: 0.92rem; font-weight: 700; color: var(--ink-soft);
+    border-bottom: 2.5px solid transparent; white-space: nowrap;
+  }
+  .tabs a:hover { color: var(--ink); text-decoration: none; }
+  .tabs a.home { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* 날짜 스트립 */
+  .datestrip { max-width: 1080px; margin: 0 auto; padding: 12px 20px 0; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .day-badge { background: var(--ink); color: var(--bg); padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 0.8rem; }
+  .datestrip .date { font-size: 0.85rem; color: var(--ink-soft); letter-spacing: 0.04em; }
+  .datestrip .auto { font-size: 0.78rem; color: var(--ink-faint); }
+  .day-nav { margin-left: auto; display: flex; gap: 6px; }
+
+  /* ================= 레이아웃 ================= */
+  .layout {
+    max-width: 1080px; margin: 0 auto; padding: 14px 20px 70px;
+    display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 16px; align-items: start;
+  }
+  @media (max-width: 880px) { .layout { grid-template-columns: 1fr; } }
+  .col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+
+  .box { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .box-head {
+    display: flex; align-items: center; gap: 8px; padding: 13px 18px 11px;
+    border-bottom: 1px solid var(--line);
+  }
+  .box-head h2 { margin: 0; font-size: 1.02rem; font-weight: 800; letter-spacing: -0.01em; }
+  .box-head .accent-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+  .box-head .more { margin-left: auto; font-size: 0.78rem; color: var(--ink-faint); }
+  .box-body { padding: 16px 18px; }
+
+  /* ---------- 검색 결과 ---------- */
+  #searchBox { display: none; }
+  #searchBox.open { display: block; border-color: var(--accent); }
+  .sr-item { padding: 10px 2px; border-bottom: 1px solid var(--line); cursor: pointer; }
+  .sr-item:last-child { border-bottom: none; }
+  .sr-item:hover .sr-title { text-decoration: underline; }
+  .sr-meta { font-size: 0.74rem; color: var(--ink-faint); font-family: ui-monospace, Consolas, monospace; }
+  .sr-title { font-size: 0.92rem; font-weight: 700; }
+  .sr-body { font-size: 0.82rem; color: var(--ink-soft); }
+  .sr-empty { color: var(--ink-faint); font-size: 0.88rem; padding: 6px 0; }
+
+  /* ---------- 학습 카드 ---------- */
+  .cards { display: grid; grid-template-columns: 1fr; gap: 12px; }
   .card {
-    background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
-    padding: 20px 18px 18px; display: flex; flex-direction: column; gap: 10px;
+    border: 1px solid var(--line); border-radius: 8px; padding: 16px 16px 14px;
+    display: flex; flex-direction: column; gap: 9px; background: var(--surface);
   }
   .card.active { border-color: currentColor; }
-  .tag { align-self: flex-start; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; padding: 3px 9px; border-radius: 3px; }
+  .tag { align-self: flex-start; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; padding: 2px 8px; border-radius: 4px; }
   .tag.cs  { color: var(--cs);  background: var(--cs-bg); }
   .tag.mkt { color: var(--mkt); background: var(--mkt-bg); }
   .tag.ai  { color: var(--ai);  background: var(--ai-bg); }
-  .card h3 { margin: 0; font-size: 1.08rem; line-height: 1.4; text-wrap: balance; }
-  .card p { margin: 0; font-size: 0.88rem; color: var(--ink-soft); }
-  .card .why { font-size: 0.84rem; }
+  .card h3 { margin: 0; font-size: 1.05rem; line-height: 1.4; }
+  .card p { margin: 0; font-size: 0.87rem; color: var(--ink-soft); }
   .card .why b { color: var(--ink); }
-  .todo { border-top: 1px dashed var(--line); padding-top: 10px; font-size: 0.84rem; }
-  .todo .label { font-family: ui-monospace, Consolas, monospace; font-size: 0.68rem; letter-spacing: 0.12em; color: var(--ink-faint); display: block; margin-bottom: 4px; }
+  .todo { border-top: 1px dashed var(--line); padding-top: 9px; font-size: 0.84rem; }
+  .todo .label { font-family: ui-monospace, Consolas, monospace; font-size: 0.66rem; letter-spacing: 0.12em; color: var(--ink-faint); display: block; margin-bottom: 3px; }
   .kw { display: flex; flex-wrap: wrap; gap: 6px; }
   .kw span { font-size: 0.72rem; color: var(--ink-soft); border: 1px solid var(--line); border-radius: 999px; padding: 1px 9px; }
+  .practice-check { display: flex; align-items: center; gap: 7px; margin-top: 6px; cursor: pointer; font-size: 0.82rem; color: var(--ink-soft); user-select: none; }
+  .practice-check input { accent-color: var(--ok); width: 15px; height: 15px; cursor: pointer; }
+  .practice-check.done { color: var(--ok); font-weight: 700; }
+  .quiz-badge { font-size: 0.72rem; font-weight: 700; border-radius: 999px; padding: 1px 9px; margin-left: auto; }
+  .quiz-badge.pass { color: var(--ok); background: var(--ok-bg); }
+  .quiz-badge.retry { color: var(--bad); background: var(--bad-bg); }
   .study-btn {
-    margin-top: auto; border: none; border-radius: 6px; padding: 9px 12px;
-    font-size: 0.86rem; font-weight: 700; cursor: pointer; color: #fff;
-    font-family: inherit;
+    align-self: flex-start; border: none; border-radius: 6px; padding: 8px 14px;
+    font-size: 0.84rem; font-weight: 700; cursor: pointer; color: #fff; font-family: inherit;
   }
   .study-btn.cs  { background: var(--cs); }
   .study-btn.mkt { background: var(--mkt); }
   .study-btn.ai  { background: var(--ai); }
   .study-btn:hover { filter: brightness(1.08); }
 
-  /* ---------- 심화 학습 패널 ---------- */
-  #detail { display: none; margin-top: 20px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  /* ---------- 심화 패널 ---------- */
+  #detail { display: none; margin-top: 14px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--surface); }
   #detail.open { display: block; }
-  .detail-head { padding: 18px 24px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 12px; }
-  .detail-head h3 { margin: 0; font-size: 1.15rem; flex: 1; }
-  .detail-head .close { background: none; border: 1px solid var(--line); border-radius: 5px; color: var(--ink-soft); cursor: pointer; padding: 3px 10px; font-size: 0.8rem; }
-  .detail-body { padding: 8px 24px 28px; }
-  .detail-body h4 {
-    margin: 26px 0 8px; font-size: 1rem;
-    padding-left: 10px; border-left: 3px solid var(--line);
-  }
+  .detail-head { padding: 15px 20px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 12px; }
+  .detail-head h3 { margin: 0; font-size: 1.08rem; flex: 1; }
+  .detail-head .close { background: none; border: 1px solid var(--line-strong); border-radius: 5px; color: var(--ink-soft); cursor: pointer; padding: 3px 10px; font-size: 0.78rem; }
+  .detail-body { padding: 6px 20px 24px; }
+  .detail-body h4 { margin: 24px 0 8px; font-size: 0.98rem; padding-left: 10px; border-left: 3px solid var(--line); }
   .detail-body h4.accent-cs  { border-color: var(--cs); }
   .detail-body h4.accent-mkt { border-color: var(--mkt); }
   .detail-body h4.accent-ai  { border-color: var(--ai); }
-  .detail-body p { font-size: 0.92rem; color: var(--ink-soft); margin: 8px 0; max-width: 70ch; }
-  .subhead { font-family: ui-monospace, Consolas, monospace; font-size: 0.7rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-faint); margin: 34px 0 10px; }
+  .detail-body p { font-size: 0.9rem; color: var(--ink-soft); margin: 8px 0; max-width: 72ch; }
+  .subhead { font-family: ui-monospace, Consolas, monospace; font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-faint); margin: 30px 0 10px; }
   .mindmap-box { overflow-x: auto; border: 1px dashed var(--line); border-radius: 8px; background: var(--bg); }
   .mindmap-box svg { display: block; }
 
   /* ---------- 퀴즈 ---------- */
-  .quiz-item { border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; margin-bottom: 12px; }
-  .quiz-q { font-weight: 700; font-size: 0.92rem; margin-bottom: 10px; }
+  .quiz-item { border: 1px solid var(--line); border-radius: 8px; padding: 13px 15px; margin-bottom: 11px; }
+  .quiz-q { font-weight: 700; font-size: 0.9rem; margin-bottom: 9px; }
   .quiz-q .qnum { font-family: ui-monospace, Consolas, monospace; color: var(--ink-faint); margin-right: 6px; }
   .choices { display: flex; flex-direction: column; gap: 6px; }
-  .choice {
-    text-align: left; background: var(--bg); border: 1px solid var(--line); color: var(--ink);
-    border-radius: 6px; padding: 8px 12px; font-size: 0.88rem; cursor: pointer; font-family: inherit;
-  }
-  .choice:not(:disabled):hover { border-color: var(--ink-soft); }
+  .choice { text-align: left; background: var(--bg); border: 1px solid var(--line); color: var(--ink); border-radius: 6px; padding: 8px 12px; font-size: 0.87rem; cursor: pointer; font-family: inherit; }
+  .choice:not(:disabled):hover { border-color: var(--ink-faint); }
   .choice.correct { background: var(--ok-bg); border-color: var(--ok); color: var(--ok); font-weight: 700; }
   .choice.wrong { background: var(--bad-bg); border-color: var(--bad); color: var(--bad); }
   .choice:disabled { cursor: default; }
-  .explain { display: none; margin-top: 10px; font-size: 0.85rem; color: var(--ink-soft); background: var(--bg); border-radius: 6px; padding: 10px 12px; }
+  .explain { display: none; margin-top: 9px; font-size: 0.84rem; color: var(--ink-soft); background: var(--bg); border-radius: 6px; padding: 9px 12px; }
   .explain.show { display: block; }
-  .quiz-score { font-size: 0.9rem; font-weight: 700; margin-top: 4px; }
+  .quiz-score { font-size: 0.9rem; font-weight: 700; margin-top: 6px; }
+  .review-meta { font-family: ui-monospace, Consolas, monospace; font-size: 0.7rem; color: var(--ink-faint); margin-bottom: 7px; }
 
-  /* ---------- 뉴스 / 동향 / 논문 ---------- */
+  /* ---------- 뉴스 ---------- */
   .news { list-style: none; margin: 0; padding: 0; }
-  .news li { padding: 14px 2px; border-bottom: 1px solid var(--line); }
-  .news .headline { font-weight: 700; font-size: 0.98rem; }
-  .news p { margin: 4px 0 0; font-size: 0.88rem; color: var(--ink-soft); }
-  a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 3px; }
-  a:focus-visible, button:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
-  .src { font-size: 0.78rem; }
-  .trends { display: grid; grid-template-columns: 1fr; gap: 12px; }
-  @media (min-width: 720px) { .trends { grid-template-columns: 1fr 1fr; } }
-  .trend { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 16px 18px; font-size: 0.9rem; color: var(--ink-soft); }
-  .trend b { color: var(--ink); display: block; margin-bottom: 4px; font-size: 0.95rem; }
-  .papers { display: flex; flex-direction: column; gap: 12px; }
-  .paper { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--ai); border-radius: 6px; padding: 14px 18px; }
-  .paper h3 { margin: 0 0 4px; font-size: 0.98rem; }
-  .paper p { margin: 0; font-size: 0.86rem; color: var(--ink-soft); }
+  .news li { padding: 12px 0; border-bottom: 1px solid var(--line); display: flex; gap: 10px; align-items: baseline; }
+  .news li:last-child { border-bottom: none; padding-bottom: 2px; }
+  .news li:first-child { padding-top: 2px; }
+  .news .rank { font-family: ui-monospace, Consolas, monospace; font-weight: 800; color: var(--accent); font-size: 0.95rem; min-width: 18px; }
+  .news .headline { font-weight: 700; font-size: 0.95rem; }
+  .news p { margin: 3px 0 0; font-size: 0.85rem; color: var(--ink-soft); }
+  .press { font-size: 0.72rem; color: var(--ink-faint); border: 1px solid var(--line); border-radius: 3px; padding: 0 5px; margin-left: 6px; white-space: nowrap; }
 
-  .archive-scroll { overflow-x: auto; }
-  table { border-collapse: collapse; width: 100%; font-size: 0.85rem; min-width: 560px; }
-  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); }
-  th { font-family: ui-monospace, Consolas, monospace; font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-faint); font-weight: 600; }
-  td:first-child { font-family: ui-monospace, Consolas, monospace; white-space: nowrap; }
-  tbody tr { cursor: pointer; }
-  tbody tr:hover td { background: var(--surface); }
-  tbody tr.current td:first-child { font-weight: 700; color: var(--link); }
+  /* ---------- 논문 ---------- */
+  .papers { display: flex; flex-direction: column; gap: 10px; }
+  .paper { border: 1px solid var(--line); border-left: 4px solid var(--ai); border-radius: 6px; padding: 12px 16px; }
+  .paper h3 { margin: 0 0 3px; font-size: 0.95rem; }
+  .paper p { margin: 0; font-size: 0.85rem; color: var(--ink-soft); }
 
-  footer { margin-top: 64px; padding-top: 20px; border-top: 2px solid var(--ink); font-size: 0.82rem; color: var(--ink-faint); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
-
-  /* ---------- 진도 통계 ---------- */
-  .stats { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
-  .stat-chip {
-    background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
-    padding: 8px 14px; font-size: 0.8rem; color: var(--ink-soft);
-    display: flex; align-items: baseline; gap: 7px;
-  }
-  .stat-chip b { font-size: 1.05rem; color: var(--ink); font-family: ui-monospace, Consolas, monospace; font-variant-numeric: tabular-nums; }
-  .theme-btn {
-    background: var(--surface); border: 1px solid var(--line); color: var(--ink-soft);
-    border-radius: 5px; padding: 3px 10px; cursor: pointer; font-size: 0.8rem; font-family: inherit;
-  }
-  .theme-btn:hover { border-color: var(--ink-soft); }
-
-  /* ---------- 실습 체크 · 퀴즈 배지 ---------- */
-  .practice-check { display: flex; align-items: center; gap: 8px; margin-top: 6px; cursor: pointer; font-size: 0.82rem; color: var(--ink-soft); user-select: none; }
-  .practice-check input { accent-color: var(--ok); width: 15px; height: 15px; cursor: pointer; }
-  .practice-check.done { color: var(--ok); font-weight: 700; }
-  .quiz-badge { font-size: 0.72rem; font-weight: 700; border-radius: 999px; padding: 1px 9px; margin-left: auto; }
-  .quiz-badge.pass { color: var(--ok); background: var(--ok-bg); }
-  .quiz-badge.retry { color: var(--bad); background: var(--bad-bg); }
-
-  /* ---------- 복습 모드 ---------- */
+  /* ---------- 사이드바 위젯 ---------- */
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .stat-chip { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 9px 12px; font-size: 0.76rem; color: var(--ink-soft); }
+  .stat-chip b { display: block; font-size: 1.15rem; color: var(--ink); font-family: ui-monospace, Consolas, monospace; font-variant-numeric: tabular-nums; }
   .review-btn {
-    background: var(--bad-bg); color: var(--bad); border: 1px solid var(--bad);
-    border-radius: 6px; padding: 8px 16px; cursor: pointer; font-size: 0.86rem; font-weight: 700; font-family: inherit;
+    width: 100%; margin-top: 10px; background: var(--bad-bg); color: var(--bad); border: 1px solid var(--bad);
+    border-radius: 6px; padding: 9px 14px; cursor: pointer; font-size: 0.85rem; font-weight: 700; font-family: inherit;
   }
   .review-btn:disabled { opacity: 0.45; cursor: default; }
-  .review-meta { font-family: ui-monospace, Consolas, monospace; font-size: 0.72rem; color: var(--ink-faint); margin-bottom: 8px; }
-  #reviewPanel { display: none; margin-top: 18px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 20px 24px; }
+  #reviewPanel { display: none; margin-top: 12px; }
   #reviewPanel.open { display: block; }
+
+  .rank-list { list-style: none; margin: 0; padding: 0; counter-reset: rk; }
+  .rank-list li {
+    counter-increment: rk; display: flex; align-items: center; gap: 9px;
+    padding: 7px 0; border-bottom: 1px solid var(--line); cursor: pointer; font-size: 0.88rem;
+  }
+  .rank-list li:last-child { border-bottom: none; }
+  .rank-list li::before {
+    content: counter(rk); font-family: ui-monospace, Consolas, monospace;
+    font-weight: 800; color: var(--accent); min-width: 16px; font-size: 0.9rem;
+  }
+  .rank-list li:hover .rk-word { text-decoration: underline; }
+  .rk-word { font-weight: 600; }
+  .rk-field { margin-left: auto; font-size: 0.68rem; font-weight: 700; padding: 1px 7px; border-radius: 3px; }
+  .rk-field.cs  { color: var(--cs);  background: var(--cs-bg); }
+  .rk-field.mkt { color: var(--mkt); background: var(--mkt-bg); }
+  .rk-field.ai  { color: var(--ai);  background: var(--ai-bg); }
+
+  .trend-list { display: flex; flex-direction: column; }
+  .trend { padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 0.84rem; color: var(--ink-soft); }
+  .trend:last-child { border-bottom: none; padding-bottom: 2px; }
+  .trend:first-child { padding-top: 2px; }
+  .trend b { color: var(--ink); display: block; margin-bottom: 2px; font-size: 0.9rem; }
+  .stat { font-family: ui-monospace, Consolas, monospace; font-variant-numeric: tabular-nums; color: var(--ink); }
+
+  .archive-list { list-style: none; margin: 0; padding: 0; }
+  .archive-list li { padding: 9px 0; border-bottom: 1px solid var(--line); cursor: pointer; }
+  .archive-list li:last-child { border-bottom: none; }
+  .archive-list li:hover .ar-topics { text-decoration: underline; }
+  .archive-list li.current .ar-day { background: var(--accent); color: #fff; }
+  .ar-day { font-family: ui-monospace, Consolas, monospace; font-size: 0.7rem; font-weight: 700; background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 1px 7px; margin-right: 7px; }
+  .ar-date { font-size: 0.75rem; color: var(--ink-faint); font-family: ui-monospace, Consolas, monospace; }
+  .ar-topics { display: block; font-size: 0.83rem; color: var(--ink-soft); margin-top: 2px; }
+
+  footer { border-top: 1px solid var(--line); background: var(--surface); }
+  .footer-in { max-width: 1080px; margin: 0 auto; padding: 18px 20px; font-size: 0.8rem; color: var(--ink-faint); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+
   @media (prefers-reduced-motion: no-preference) {
-    #detail.open { animation: slidein 0.25s ease; }
-    @keyframes slidein { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+    #detail.open, #searchBox.open { animation: slidein 0.22s ease; }
+    @keyframes slidein { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: none; } }
   }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <div class="date-row">
-      <span class="day-badge" id="dayBadge">DAY –</span>
-      <span id="dateLabel">불러오는 중…</span>
-      <span>매일 아침 자동 업데이트</span>
-      <nav class="day-nav" aria-label="날짜 이동">
-        <button id="prevDay" disabled>← 이전</button>
-        <button id="nextDay" disabled>다음 →</button>
-        <button class="theme-btn" id="themeBtn" type="button" title="테마 전환">◐ 자동</button>
-      </nav>
+
+<div class="topbar">
+  <div class="topbar-in">
+    <a class="logo" href="#" onclick="location.reload(); return false;">
+      <span class="logo-mark">학</span>
+      <span class="logo-text">매일<b>학습</b></span>
+    </a>
+    <form class="searchbox" id="searchForm" role="search">
+      <input id="searchInput" type="search" placeholder="지난 개념·뉴스·논문 검색" autocomplete="off">
+      <button type="submit" aria-label="검색">🔍</button>
+    </form>
+    <div class="top-right">
+      <button class="theme-btn" id="themeBtn" type="button" title="테마 전환">◐ 자동</button>
     </div>
-    <h1>오늘의 학습 브리핑</h1>
-    <p class="tagline">CS · 마케팅 · AI — 개념 셋, 퀴즈로 확인, 마인드맵으로 정리.</p>
-    <div class="stats" id="stats"></div>
-  </header>
-
-  <section id="study">
-    <div class="sec-head"><span class="kicker">Study</span><h2>오늘 공부할 개념</h2></div>
-    <div class="cards" id="cards"></div>
-    <div id="detail" aria-live="polite"></div>
-  </section>
-
-  <section id="newsSec">
-    <div class="sec-head"><span class="kicker">News</span><h2>AI 뉴스 브리핑</h2></div>
-    <ul class="news" id="newsList"></ul>
-  </section>
-
-  <section id="trendSec">
-    <div class="sec-head"><span class="kicker">Trends</span><h2>요즘 AI 동향</h2></div>
-    <div class="trends" id="trendGrid"></div>
-  </section>
-
-  <section id="paperSec">
-    <div class="sec-head"><span class="kicker">Papers</span><h2>이슈가 된 논문</h2></div>
-    <div class="papers" id="paperList"></div>
-    <p style="font-size:0.82rem; color:var(--ink-faint); margin-top:12px;">
-      더 보기: <a href="https://huggingface.co/papers">Hugging Face Daily Papers</a> ·
-      <a href="https://arxiv.org/list/cs.AI/current">arXiv cs.AI 최신</a>
-    </p>
-  </section>
-
-  <section id="reviewSec">
-    <div class="sec-head"><span class="kicker">Review</span><h2>틀린 문제 복습</h2></div>
-    <p style="font-size:0.88rem; color:var(--ink-soft); margin:0 0 12px;">
-      퀴즈에서 틀린 문제가 자동으로 모입니다. 다시 풀어서 맞히면 목록에서 사라집니다.
-    </p>
-    <button class="review-btn" id="reviewBtn" type="button" disabled>복습할 문제가 없습니다</button>
-    <div id="reviewPanel" aria-live="polite"></div>
-  </section>
-
-  <section id="archiveSec">
-    <div class="sec-head"><span class="kicker">Archive</span><h2>학습 기록</h2></div>
-    <div class="archive-scroll">
-      <table>
-        <thead><tr><th>Day</th><th>날짜</th><th>CS</th><th>마케팅</th><th>AI</th></tr></thead>
-        <tbody id="archiveBody"></tbody>
-      </table>
-    </div>
-  </section>
-
-  <footer>
-    <span>매일 아침 자동 갱신 · 지난 날짜는 학습 기록에서 클릭해 다시 볼 수 있습니다.</span>
-    <span>Made with Claude</span>
-  </footer>
+  </div>
 </div>
+
+<nav class="tabs" aria-label="섹션 이동">
+  <div class="tabs-in">
+    <a class="home" href="#study">홈</a>
+    <a href="#study">오늘의 학습</a>
+    <a href="#newsSec">뉴스</a>
+    <a href="#trendBox">동향</a>
+    <a href="#paperSec">논문</a>
+    <a href="#statsBox">내 현황</a>
+    <a href="#archiveBox">학습 기록</a>
+  </div>
+</nav>
+
+<div class="datestrip">
+  <span class="day-badge" id="dayBadge">DAY –</span>
+  <span class="date" id="dateLabel">불러오는 중…</span>
+  <span class="auto">매일 아침 자동 업데이트</span>
+  <nav class="day-nav" aria-label="날짜 이동">
+    <button id="prevDay" disabled>← 이전</button>
+    <button id="nextDay" disabled>다음 →</button>
+  </nav>
+</div>
+
+<div class="layout">
+  <!-- ============ 메인 컬럼 ============ -->
+  <div class="col">
+    <div class="box" id="searchBox">
+      <div class="box-head"><span class="accent-dot"></span><h2 id="searchTitle">검색 결과</h2>
+        <button class="detail-head close" id="searchClose" type="button" style="margin-left:auto; background:none; border:1px solid var(--line-strong); border-radius:5px; color:var(--ink-soft); cursor:pointer; padding:3px 10px; font-size:0.78rem;">닫기 ✕</button>
+      </div>
+      <div class="box-body" id="searchResults"></div>
+    </div>
+
+    <div class="box" id="study">
+      <div class="box-head"><span class="accent-dot"></span><h2>오늘의 학습</h2><span class="more">개념 셋 · 퀴즈 · 마인드맵</span></div>
+      <div class="box-body">
+        <div class="cards" id="cards"></div>
+        <div id="detail" aria-live="polite"></div>
+      </div>
+    </div>
+
+    <div class="box" id="newsSec">
+      <div class="box-head"><span class="accent-dot"></span><h2>AI 뉴스</h2><span class="more">오늘의 브리핑</span></div>
+      <div class="box-body"><ul class="news" id="newsList"></ul></div>
+    </div>
+
+    <div class="box" id="paperSec">
+      <div class="box-head"><span class="accent-dot"></span><h2>이슈가 된 논문</h2>
+        <a class="more" href="https://huggingface.co/papers" target="_blank" rel="noopener">HF Daily Papers →</a>
+      </div>
+      <div class="box-body"><div class="papers" id="paperList"></div></div>
+    </div>
+  </div>
+
+  <!-- ============ 사이드바 ============ -->
+  <div class="col">
+    <div class="box" id="statsBox">
+      <div class="box-head"><span class="accent-dot"></span><h2>내 학습 현황</h2></div>
+      <div class="box-body">
+        <div class="stats" id="stats"></div>
+        <button class="review-btn" id="reviewBtn" type="button" disabled>복습할 문제가 없습니다</button>
+        <div id="reviewPanel" aria-live="polite"></div>
+      </div>
+    </div>
+
+    <div class="box" id="kwBox">
+      <div class="box-head"><span class="accent-dot"></span><h2>오늘의 키워드</h2><span class="more">누르면 검색</span></div>
+      <div class="box-body"><ol class="rank-list" id="kwList"></ol></div>
+    </div>
+
+    <div class="box" id="trendBox">
+      <div class="box-head"><span class="accent-dot"></span><h2>요즘 AI 동향</h2></div>
+      <div class="box-body"><div class="trend-list" id="trendGrid"></div></div>
+    </div>
+
+    <div class="box" id="archiveBox">
+      <div class="box-head"><span class="accent-dot"></span><h2>학습 기록</h2><span class="more" id="archiveCount"></span></div>
+      <div class="box-body"><ul class="archive-list" id="archiveList"></ul></div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-in">
+    <span>매일 아침 자동 갱신 · 진도는 이 브라우저에 저장됩니다.</span>
+    <span>Made with Claude</span>
+  </div>
+</footer>
+
 <script src="js/mindmap.js"></script>
 <script src="js/app.js"></script>
 </body>

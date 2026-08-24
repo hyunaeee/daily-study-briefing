@@ -1,9 +1,10 @@
-/* 매일 학습 브리핑 — 앱 로직
-   (렌더링 + 진도/스트릭 추적 + 틀린 문제 복습 + 테마 토글, 저장은 모두 localStorage) */
+/* 매일 학습 브리핑 — 포털 레이아웃 앱 로직
+   (렌더링 + 검색 + 키워드 랭킹 + 진도/스트릭 + 복습 + 테마, 저장은 모두 localStorage) */
 (function () {
   const $ = (sel) => document.querySelector(sel);
   const PKEY = "dsb.progress", TKEY = "dsb.theme";
   let indexData = null, dayData = null, dayPos = 0;
+  let allDaysCache = null; // 검색용 전체 데이터
 
   const esc = (s) => String(s)
     .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
@@ -27,7 +28,7 @@
 
   function streak() {
     let n = 0, offset = 0;
-    if (!progress.visits[todayKey(0)]) offset = -1; // 오늘 아직 안 봤으면 어제부터 셈
+    if (!progress.visits[todayKey(0)]) offset = -1;
     while (progress.visits[todayKey(offset - n)]) n++;
     return n;
   }
@@ -38,10 +39,10 @@
     const totalT = quizzes.reduce((s, q) => s + q.t, 0);
     const wrongN = Object.keys(progress.wrong).length;
     $("#stats").innerHTML = `
-      <span class="stat-chip">🔥 연속 학습 <b>${streak()}</b>일</span>
-      <span class="stat-chip">✅ 완료한 퀴즈 <b>${quizzes.length}</b>개</span>
-      <span class="stat-chip">🎯 평균 정답률 <b>${totalT ? Math.round(totalC / totalT * 100) : 0}</b>%</span>
-      <span class="stat-chip">📝 복습 대기 <b>${wrongN}</b>문제</span>`;
+      <span class="stat-chip">🔥 연속 학습<b>${streak()}일</b></span>
+      <span class="stat-chip">✅ 완료한 퀴즈<b>${quizzes.length}개</b></span>
+      <span class="stat-chip">🎯 평균 정답률<b>${totalT ? Math.round(totalC / totalT * 100) : 0}%</b></span>
+      <span class="stat-chip">📝 복습 대기<b>${wrongN}문제</b></span>`;
     const btn = $("#reviewBtn");
     btn.disabled = wrongN === 0;
     btn.textContent = wrongN === 0 ? "복습할 문제가 없습니다 🎉" : `틀린 문제 ${wrongN}개 다시 풀기`;
@@ -85,6 +86,11 @@
     }
     renderStats();
     $("#reviewBtn").addEventListener("click", openReview);
+    $("#searchForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      runSearch($("#searchInput").value.trim());
+    });
+    $("#searchClose").addEventListener("click", closeSearch);
   }
 
   async function showDay(pos) {
@@ -99,7 +105,84 @@
     renderNews();
     renderTrends();
     renderPapers();
+    renderKeywords();
     renderArchive();
+  }
+
+  /* ---------- 검색 ---------- */
+  async function loadAllDays() {
+    if (allDaysCache) return allDaysCache;
+    allDaysCache = await Promise.all(
+      indexData.days.map(async (d, pos) => ({ pos, meta: d, data: await loadJSON("data/" + d.file) }))
+    );
+    return allDaysCache;
+  }
+
+  async function runSearch(query) {
+    if (!query) { closeSearch(); return; }
+    const q = query.toLowerCase();
+    const days = await loadAllDays();
+    const results = [];
+    days.forEach(({ pos, data }) => {
+      data.concepts.forEach((c, ci) => {
+        const hay = [c.title, c.summary, c.why, ...(c.keywords || []),
+          ...(c.deepDive || []).map(s => s.h)].join(" ").toLowerCase();
+        if (hay.includes(q)) results.push({
+          kind: "concept", pos, ci, day: data.day,
+          field: c.field, fieldLabel: c.fieldLabel, title: c.title, body: c.summary
+        });
+      });
+      (data.news || []).forEach(n => {
+        if ((n.headline + " " + n.body).toLowerCase().includes(q))
+          results.push({ kind: "news", pos, day: data.day, title: n.headline, body: n.body, url: n.url });
+      });
+      (data.papers || []).forEach(p => {
+        if ((p.title + " " + p.desc).toLowerCase().includes(q))
+          results.push({ kind: "paper", pos, day: data.day, title: p.title, body: p.desc });
+      });
+    });
+
+    const box = $("#searchBox");
+    $("#searchTitle").textContent = `'${query}' 검색 결과 ${results.length}건`;
+    const kindLabel = { concept: "개념", news: "뉴스", paper: "논문" };
+    $("#searchResults").innerHTML = results.length === 0
+      ? `<div class="sr-empty">검색 결과가 없습니다. 다른 키워드로 찾아보세요.</div>`
+      : results.slice(0, 20).map((r, i) => `
+        <div class="sr-item" data-i="${i}">
+          <div class="sr-meta">DAY ${r.day} · ${kindLabel[r.kind]}${r.fieldLabel ? " · " + esc(r.fieldLabel) : ""}</div>
+          <div class="sr-title">${esc(r.title)}</div>
+          <div class="sr-body">${esc(r.body.length > 90 ? r.body.slice(0, 90) + "…" : r.body)}</div>
+        </div>`).join("");
+    box.classList.add("open");
+    $("#searchResults").querySelectorAll(".sr-item").forEach(el =>
+      el.addEventListener("click", async () => {
+        const r = results[Number(el.dataset.i)];
+        await showDay(r.pos);
+        if (r.kind === "concept") openDetail(r.ci);
+        else if (r.kind === "news") $("#newsSec").scrollIntoView({ behavior: "smooth" });
+        else $("#paperSec").scrollIntoView({ behavior: "smooth" });
+      }));
+    box.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+
+  function closeSearch() {
+    $("#searchBox").classList.remove("open");
+    $("#searchResults").innerHTML = "";
+  }
+
+  /* ---------- 오늘의 키워드 랭킹 ---------- */
+  function renderKeywords() {
+    const items = [];
+    dayData.concepts.forEach(c => (c.keywords || []).forEach(k =>
+      items.push({ word: k, field: c.field, fieldLabel: c.fieldLabel })));
+    $("#kwList").innerHTML = items.slice(0, 10).map(it => `
+      <li data-w="${esc(it.word)}"><span class="rk-word">${esc(it.word)}</span>
+      <span class="rk-field ${it.field}">${esc(it.fieldLabel)}</span></li>`).join("");
+    $("#kwList").querySelectorAll("li").forEach(li =>
+      li.addEventListener("click", () => {
+        $("#searchInput").value = li.dataset.w;
+        runSearch(li.dataset.w);
+      }));
   }
 
   /* ---------- 개념 카드 ---------- */
@@ -184,7 +267,7 @@
         progress.quiz[key] = { c: correct, t: total };
         saveProgress();
         renderStats();
-        renderCards(); // 배지 갱신
+        renderCards();
         document.querySelectorAll("#cards .card").forEach((el, j) => {
           el.classList.toggle("active", j === i);
           el.style.color = j === i ? `var(--${c.field})` : "";
@@ -256,7 +339,7 @@
     scoreEl.className = "quiz-score";
     renderQuiz(panel, null, items, {
       onAnswer(item, qi, ok) {
-        if (ok) delete progress.wrong[item._wkey]; // 맞히면 복습 목록에서 제거
+        if (ok) delete progress.wrong[item._wkey];
         saveProgress();
         renderStats();
       },
@@ -270,16 +353,21 @@
   }
 
   /* ---------- 뉴스 / 동향 / 논문 / 아카이브 ---------- */
+  function press(url) {
+    try { return new URL(url).hostname.replace(/^www\./, ""); } catch { return ""; }
+  }
+
   function renderNews() {
-    $("#newsList").innerHTML = dayData.news.map(n => `
-      <li><div class="headline">${esc(n.headline)}</div>
-      <p>${esc(n.body)} <a class="src" href="${esc(n.url)}" target="_blank" rel="noopener">출처</a></p></li>`).join("");
+    $("#newsList").innerHTML = dayData.news.map((n, i) => `
+      <li><span class="rank">${i + 1}</span>
+      <div><span class="headline">${esc(n.headline)}</span><span class="press">${esc(press(n.url))}</span>
+      <p>${esc(n.body)} <a class="src" href="${esc(n.url)}" target="_blank" rel="noopener">원문 보기</a></p></div></li>`).join("");
   }
 
   function renderTrends() {
     $("#trendGrid").innerHTML = dayData.trends.map(t => `
       <div class="trend"><b>${esc(t.title)}</b>${esc(t.body)}
-      ${t.url ? ` <a class="src" href="${esc(t.url)}" target="_blank" rel="noopener">출처</a>` : ""}</div>`).join("");
+      ${t.url ? ` <a href="${esc(t.url)}" target="_blank" rel="noopener" style="font-size:0.76rem">출처</a>` : ""}</div>`).join("");
   }
 
   function renderPapers() {
@@ -288,15 +376,20 @@
   }
 
   function renderArchive() {
-    const body = $("#archiveBody");
-    body.innerHTML = "";
-    indexData.days.forEach((d, pos) => {
-      const tr = document.createElement("tr");
-      if (pos === dayPos) tr.className = "current";
-      tr.innerHTML = `<td>${d.day}</td><td>${esc(d.date)}</td>
-        <td>${esc(d.topics.cs)}</td><td>${esc(d.topics.mkt)}</td><td>${esc(d.topics.ai)}</td>`;
-      tr.addEventListener("click", () => showDay(pos));
-      body.appendChild(tr);
+    $("#archiveCount").textContent = `총 ${indexData.days.length}일`;
+    const list = $("#archiveList");
+    list.innerHTML = "";
+    [...indexData.days].reverse().forEach((d) => {
+      const pos = indexData.days.indexOf(d);
+      const li = document.createElement("li");
+      if (pos === dayPos) li.className = "current";
+      li.innerHTML = `<span class="ar-day">DAY ${d.day}</span><span class="ar-date">${esc(d.date)}</span>
+        <span class="ar-topics">${esc(d.topics.cs)} · ${esc(d.topics.mkt)} · ${esc(d.topics.ai)}</span>`;
+      li.addEventListener("click", () => {
+        showDay(pos);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
+      list.appendChild(li);
     });
   }
 
