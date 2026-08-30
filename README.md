@@ -19,10 +19,10 @@
 
 ![상세 화면](docs/assets/screenshot-detail.png)
 
-### 모바일
+### 좁은 화면 · 모바일
 사이드바가 아래로 접히는 1단 반응형 레이아웃.
 
-<img src="docs/assets/screenshot-mobile.png" width="360" alt="모바일 화면">
+<img src="docs/assets/screenshot-mobile.png" width="380" alt="모바일 화면">
 
 ## ✨ 주요 기능
 
